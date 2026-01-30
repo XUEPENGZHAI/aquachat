@@ -1,66 +1,40 @@
+# docker-compose (stable) - MySQL and Redis only for local builds
 version: "3"
 services:
+  # MySQL database
   mysql:
-    image: mysql:5.7.44
-    container_name: db
+    image: mysql:8.4.8
+    container_name: dbmysql
     restart: always
+    ports:
+      - "3306:3306"  # host 3306 -> container 3306
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chatnio
-      MYSQL_USER: chatnio
-      MYSQL_PASSWORD: chatnio123456!
+      MYSQL_DATABASE: dbmysql
+      MYSQL_USER: aquachat
+      MYSQL_PASSWORD: cyberis999@
       TZ: Asia/Shanghai
     expose:
       - "3306"
     volumes:
       - ./db:/var/lib/mysql
     networks:
-      - chatnio-network
+      - aquachat-network
 
+  # Redis cache
   redis:
-    image: redis:8.2.1
-    container_name: redis
+    image: redis:7.4.7-alpine3.21
+    container_name: aquachatredis
     restart: always
+    ports:
+      - "6379:6379"  # host 6379 -> container 6379
     expose:
       - "6379"
     volumes:
       - ./redis:/data
     networks:
-      - chatnio-network
-
-  chatnio:
-    image: programzmh/chatnio:stable
-    container_name: chatnio
-    restart: always
-    ports:
-      - "8000:8094"
-    depends_on:
-      - mysql
-      - redis
-    links:
-      - mysql
-      - redis
-    ulimits:
-      nofile:
-        soft: 65535
-        hard: 65535
-    environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: chatnio
-      MYSQL_PASSWORD: chatnio123456!
-      MYSQL_DB: chatnio
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      REDIS_DB: 0
-      SERVE_STATIC: "true"
-    volumes:
-      - ./config:/config
-      - ./logs:/logs
-      - ./storage:/storage
-    networks:
-      - chatnio-network
+      - aquachat-network
 
 networks:
-  chatnio-network:
+  aquachat-network:
     driver: bridge
