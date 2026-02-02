@@ -1,23 +1,22 @@
 # docker-compose (stable) - MySQL and Redis only for local builds
-version: "3"
 services:
   # MySQL database
   mysql:
     image: mysql:8.4.8
-    container_name: dbmysql
+    container_name: aquachatmysql
     restart: always
     ports:
       - "3306:3306"  # host 3306 -> container 3306
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: dbmysql
+      MYSQL_DATABASE: aquachatmysql
       MYSQL_USER: aquachat
       MYSQL_PASSWORD: cyberis999@
       TZ: Asia/Shanghai
     expose:
       - "3306"
     volumes:
-      - ./db:/var/lib/mysql
+      - ./db:/var/lib/aquachatmysql
     networks:
       - aquachat-network
 
@@ -31,7 +30,7 @@ services:
     expose:
       - "6379"
     volumes:
-      - ./redis:/data
+      - ./redis:/aquachatredis
     networks:
       - aquachat-network
 

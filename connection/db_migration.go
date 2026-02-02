@@ -15,8 +15,9 @@ func validSqlError(err error) bool {
 
 	// Error 1060: Duplicate column name
 	// Error 1050: Table already exists
+	// Error 1061: Duplicate key name
 
-	return !(strings.Contains(content, "Error 1060") || strings.Contains(content, "Error 1050"))
+	return !(strings.Contains(content, "Error 1060") || strings.Contains(content, "Error 1050") || strings.Contains(content, "Error 1061"))
 }
 
 func checkSqlError(_ sql.Result, err error) error {
@@ -61,6 +62,60 @@ func doMigration(db *sql.DB) error {
 	if err := execSql(db, `
 		ALTER TABLE conversation
 		ADD COLUMN task_id VARCHAR(255) NULL;
+	`); err != nil {
+		return err
+	}
+
+	// add wechat identifiers for WeChat login
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN wechat_openid VARCHAR(128) NULL;
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN wechat_unionid VARCHAR(128) NULL;
+	`); err != nil {
+		return err
+	}
+
+	// reserve phone/id_card for future SMS login and KYC
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN phone VARCHAR(32) NULL;
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		ALTER TABLE auth
+		ADD COLUMN id_card VARCHAR(32) NULL;
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		CREATE UNIQUE INDEX idx_auth_wechat_openid ON auth(wechat_openid);
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		CREATE UNIQUE INDEX idx_auth_wechat_unionid ON auth(wechat_unionid);
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		CREATE UNIQUE INDEX idx_auth_phone ON auth(phone);
+	`); err != nil {
+		return err
+	}
+
+	if err := execSql(db, `
+		CREATE UNIQUE INDEX idx_auth_id_card ON auth(id_card);
 	`); err != nil {
 		return err
 	}

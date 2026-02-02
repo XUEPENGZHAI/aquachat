@@ -56,7 +56,7 @@ func getConn() *sql.DB {
 	db, err := sql.Open("mysql", mysqlUrl)
 
 	if pingErr := db.Ping(); err != nil || pingErr != nil {
-		errMsg := utils.Multi[string](err != nil, utils.GetError(err), utils.GetError(pingErr)) // err.Error() may contain nil pointer
+		errMsg := utils.Multi(err != nil, utils.GetError(err), utils.GetError(pingErr)) // err.Error() may contain nil pointer
 		globals.Warn(
 			fmt.Sprintf("[connection] failed to connect to mysql server: %s (message: %s), will retry in 5 seconds",
 				viper.GetString("mysql.host"), errMsg,
@@ -92,7 +92,7 @@ func ConnectDatabase() *sql.DB {
 	CreateBroadcastTable(db)
 
 	if err := doMigration(db); err != nil {
-		fmt.Println(fmt.Sprintf("migration error: %s", err))
+		fmt.Printf("migration error: %s\n", err)
 	}
 
 	DB = db
@@ -131,6 +131,10 @@ func CreateUserTable(db *sql.DB) {
 		  username VARCHAR(24) UNIQUE,
 		  token VARCHAR(255) NOT NULL,
 		  email VARCHAR(255) UNIQUE,
+		  phone VARCHAR(32) UNIQUE,
+		  id_card VARCHAR(32) UNIQUE,
+		  wechat_openid VARCHAR(128) UNIQUE,
+		  wechat_unionid VARCHAR(128) UNIQUE,
 		  password VARCHAR(64) NOT NULL,
 		  is_admin BOOLEAN DEFAULT FALSE,
 		  is_banned BOOLEAN DEFAULT FALSE

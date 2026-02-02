@@ -23,6 +23,7 @@ access.json
 access/*.json
 
 db
+db.bak*/
 redis
 config
 presets

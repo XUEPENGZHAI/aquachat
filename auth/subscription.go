@@ -7,9 +7,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"math"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 func disableSubscription() bool {
@@ -76,7 +77,7 @@ func (u *User) IsEnterprise(db *sql.DB) bool {
 }
 
 func (u *User) GetSubscriptionExpiredDay(db *sql.DB) int {
-	stamp := u.GetSubscriptionTime(db).Sub(time.Now())
+	stamp := time.Until(u.GetSubscriptionTime(db))
 	return int(math.Round(stamp.Hours() / 24))
 }
 
@@ -119,7 +120,7 @@ func (u *User) CountUpgradePrice(db *sql.DB, target int) float32 {
 		return 0
 	}
 
-	days := expired.Sub(time.Now()).Hours() / 24
+	days := time.Until(expired).Hours() / 24
 	return float32(days) * weight / 30
 }
 

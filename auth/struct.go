@@ -4,20 +4,25 @@ import (
 	"chat/globals"
 	"chat/utils"
 	"database/sql"
+	"strings"
 	"time"
 )
 
 type User struct {
-	ID           int64      `json:"id"`
-	Username     string     `json:"username"`
-	Email        string     `json:"email"`
-	BindID       int64      `json:"bind_id"`
-	Password     string     `json:"password"`
-	Token        string     `json:"token"`
-	Admin        bool       `json:"is_admin"`
-	Level        int        `json:"level"`
-	Subscription *time.Time `json:"subscription"`
-	Banned       bool       `json:"is_banned"`
+	ID            int64      `json:"id"`
+	Username      string     `json:"username"`
+	Email         string     `json:"email"`
+	Phone         string     `json:"phone"`
+	IDCard        string     `json:"id_card"`
+	BindID        int64      `json:"bind_id"`
+	Password      string     `json:"password"`
+	Token         string     `json:"token"`
+	WechatOpenID  string     `json:"wechat_openid"`
+	WechatUnionID string     `json:"wechat_unionid"`
+	Admin         bool       `json:"is_admin"`
+	Level         int        `json:"level"`
+	Subscription  *time.Time `json:"subscription"`
+	Banned        bool       `json:"is_banned"`
 }
 
 type UserInfo struct {
@@ -50,6 +55,25 @@ func GetUserByEmail(db *sql.DB, email string) *User {
 		return nil
 	}
 	return &user
+}
+
+func GetUserByWechat(db *sql.DB, unionid, openid string) *User {
+	var user User
+
+	// Prefer unionid if available to avoid duplicated accounts across platforms.
+	if len(strings.TrimSpace(unionid)) > 0 {
+		if err := globals.QueryRowDb(db, "SELECT id, username, password FROM auth WHERE wechat_unionid = ? LIMIT 1", unionid).Scan(&user.ID, &user.Username, &user.Password); err == nil {
+			return &user
+		}
+	}
+
+	if len(strings.TrimSpace(openid)) > 0 {
+		if err := globals.QueryRowDb(db, "SELECT id, username, password FROM auth WHERE wechat_openid = ? LIMIT 1", openid).Scan(&user.ID, &user.Username, &user.Password); err == nil {
+			return &user
+		}
+	}
+
+	return nil
 }
 
 func GetId(db *sql.DB, user *User) int64 {

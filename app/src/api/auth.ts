@@ -8,6 +8,10 @@ export type LoginForm = {
   password: string;
 };
 
+export type WechatLoginForm = {
+  code: string;
+};
+
 export type DeepLoginForm = {
   token: string;
 };
@@ -77,6 +81,13 @@ export async function doLogin(
   data: DeepLoginForm | LoginForm,
 ): Promise<LoginResponse> {
   const response = await axios.post("/login", data);
+  return response.data as LoginResponse;
+}
+
+export async function doWechatLogin(
+  data: WechatLoginForm,
+): Promise<LoginResponse> {
+  const response = await axios.post("/wechat_login", data);
   return response.data as LoginResponse;
 }
 

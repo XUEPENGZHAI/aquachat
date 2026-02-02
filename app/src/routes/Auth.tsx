@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input.tsx";
 import Require, { LengthRangeRequired } from "@/components/Require.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { formReducer, isTextInRange } from "@/utils/form.ts";
-import { doLogin, LoginForm } from "@/api/auth.ts";
+import { doLogin, doWechatLogin } from "@/api/auth.ts";
 import { getErrorMessage, isEnter } from "@/utils/base.ts";
 import { ScrollArea } from "@/components/ui/scroll-area.tsx";
 import { toast } from "sonner";
@@ -84,20 +84,21 @@ function DeepAuth() {
 function Login() {
   const { t } = useTranslation();
   const globalDispatch = useDispatch();
-  const [form, dispatch] = useReducer(formReducer<LoginForm>(), {
-    username: sessionStorage.getItem("username") || "",
-    password: sessionStorage.getItem("password") || "",
-  });
+  const [, dispatch] = useReducer(formReducer<Record<string, string>>(), {});
 
   const onSubmit = async () => {
-    if (
-      !isTextInRange(form.username, 1, 255) ||
-      !isTextInRange(form.password, 6, 36)
-    )
+    // TODO: 接入微信网页/PC OpenSDK，这里从 SDK 获得 code 后再调用登录。
+    const codeFromSdk = (window as any)?.wechatLoginCode || getQueryParam("code") || "";
+
+    if (!isTextInRange(codeFromSdk, 1, 255)) {
+      toast.warning("请先完成微信授权", {
+        description: "接入微信 SDK 获取 code 后再点击快捷登录。",
+      });
       return;
+    }
 
     try {
-      const resp = await doLogin(form);
+      const resp = await doWechatLogin({ code: codeFromSdk });
       if (!resp.status) {
         toast.warning(t("login-failed"), {
           description: t("login-failed-prompt", { reason: resp.error }),
@@ -108,16 +109,6 @@ function Login() {
       toast.success(t("login-success"), {
         description: t("login-success-prompt"),
       });
-
-      if (
-        form.username.trim() === "root" &&
-        form.password.trim() === "coai123456"
-      ) {
-        toast.warning(t("admin.default-password"), {
-          description: t("admin.default-password-prompt"),
-          duration: 15000,
-        });
-      }
 
       validateToken(globalDispatch, resp.token);
       await router.navigate("/");
@@ -149,69 +140,24 @@ function Login() {
         <Card className={`auth-card`}>
           <CardContent className={`pb-0`}>
             <div className={`auth-wrapper`}>
-              <Label>
-                <Require />
-                {t("auth.username-or-email")}
-                <LengthRangeRequired
-                  content={form.username}
-                  min={1}
-                  max={255}
-                  hideOnEmpty={true}
-                />
-              </Label>
-              <Input
-                placeholder={t("auth.username-or-email-placeholder")}
-                value={form.username}
-                onChange={(e) =>
-                  dispatch({ type: "update:username", payload: e.target.value })
-                }
-              />
-
-              <Label>
-                <Require />
-                {t("auth.password")}
-                <LengthRangeRequired
-                  content={form.password}
-                  min={6}
-                  max={36}
-                  hideOnEmpty={true}
-                />
-              </Label>
-              <Input
-                placeholder={t("auth.password-placeholder")}
-                value={form.password}
-                type={"password"}
-                onChange={(e) =>
-                  dispatch({ type: "update:password", payload: e.target.value })
-                }
-              />
-
               <Button
                 tapScale={0.975}
-                classNameWrapper={`mt-2`}
+                classNameWrapper={`mt-3 w-full`}
                 onClick={onSubmit}
                 className={`w-full`}
                 loading={true}
               >
-                {t("login")}
+                微信快捷登录
               </Button>
+
+              <div className={`text-sm text-muted-foreground mt-3 mb-2`}>
+                使用微信扫码/授权后，前端 SDK 获取到 code，将自动完成登录。
+                <br />
+                TODO: 接入微信网页/PC OpenSDK，点击上方按钮后拉起微信授权。
+              </div>
             </div>
           </CardContent>
         </Card>
-        <div className={`auth-card addition-wrapper`}>
-          <div className={`row`}>
-            {t("auth.no-account")}
-            <a className={`link`} onClick={() => router.navigate("/register")}>
-              {t("auth.register")}
-            </a>
-          </div>
-          <div className={`row`}>
-            {t("auth.forgot-password")}
-            <a className={`link`} onClick={() => router.navigate("/forgot")}>
-              {t("auth.reset-password")}
-            </a>
-          </div>
-        </div>
       </div>
     </ScrollArea>
   );
